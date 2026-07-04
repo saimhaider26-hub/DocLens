@@ -3,14 +3,17 @@ import shutil
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from ingest import extract_text_from_pdf
-from chunker import chunk_document
-from indexer import index_documents
-from qa import generate_cited_answer
+from src.ingest import extract_text_from_pdf
+from src.chunker import chunk_document
+from src.indexer import index_documents
+from src.qa import generate_cited_answer
 
 app = FastAPI(title="DocLens API", version="1.0")
 
-UPLOAD_DIR = "../data"
+UPLOAD_DIR = "data"
+
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 class QueryRequest(BaseModel):
     question: str
@@ -53,4 +56,5 @@ async def list_documents():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    
+    uvicorn.run("src.app:app", host="127.0.0.1", port=8000, reload=True)

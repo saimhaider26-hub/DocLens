@@ -1,17 +1,16 @@
 import chromadb
-from chunker import chunk_document
-from ingest import extract_text_from_pdf
+from src.chunker import chunk_document
+from src.ingest import extract_text_from_pdf
 
 def index_documents(chunks, collection_name="doclens_mvp"):
     """
     Initializes a local ChromaDB and stores document chunks with their metadata.
     """
-
-    client = chromadb.PersistentClient(path="../.chroma_db")
+   
+    client = chromadb.PersistentClient(path="/app/chroma_db")
     
-    
+   
     collection = client.get_or_create_collection(name=collection_name)
-    
 
     ids = []
     documents = []
@@ -38,6 +37,7 @@ def index_documents(chunks, collection_name="doclens_mvp"):
     return collection
 
 if __name__ == "__main__":
+   
     pdf_path = "../data/sample.pdf"
     
     print("1. Extracting text...")

@@ -1,14 +1,8 @@
 # DocLens — Source-Cited Document Q&A Engine
 
 ## 🎯 What This Is
-DocLens is a focused, ship-ready RAG (Retrieval-Augmented Generation) backend that lets a user upload documents (PDF/DOCX, including scanned files) and ask questions in plain language — getting back accurate answers with **exact page-level citations**.
+DocLens is a focused, ship ready RAG (Retrieval Augmented Generation) backend that lets a user upload documents (PDF/DOCX, including scanned files) and ask questions in plain language getting back accurate answers with **exact page-level citations**.
 
-This project exists to prove one thing on a portfolio: *I can build the exact system Upwork clients are actively paying for right now.* It is deliberately scoped to be finishable, demoable, and directly reusable as proof-of-work in proposals — not a sprawling architecture doc that never ships.
-
-This directly maps to real job posts like:
-- "AI Engineer for RAG Document Intelligence System — Source-Cited Q&A over PDFs" ($400)
-- "AI Engineer for RAG + Multi-Agent Document System" ($500)
-- "AI Developer Needed to Build an AI-Powered University Document Analysis Assistant" ($1,000)
 
 ---
 

@@ -1,7 +1,8 @@
-fastapi==0.110.0
-uvicorn==0.29.0
-pypdf==4.1.0
-python-docx==1.0.1
-chromadb==0.4.24
-ollama==0.1.7
-streamlit==1.32.2
+fastapi
+uvicorn
+PyMuPDF
+python-docx
+chromadb
+ollama
+streamlit
+rank-bm25

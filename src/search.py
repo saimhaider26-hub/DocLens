@@ -2,8 +2,11 @@ import chromadb
 from rank_bm25 import BM25Okapi
 
 def hybrid_search(question, n_results=3, collection_name="doclens_mvp"):
-    client = chromadb.PersistentClient(path="../.chroma_db")
-    collection = client.get_collection(name=collection_name)
+    # FIXED: Must match the path in indexer.py exactly
+    client = chromadb.PersistentClient(path="/app/chroma_db")
+    
+    # FIXED: Use get_or_create to ensure consistency during search
+    collection = client.get_or_create_collection(name=collection_name)
     
     all_data = collection.get(include=['documents', 'metadatas'])
     ids = all_data['ids']
