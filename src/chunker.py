@@ -1,36 +1,36 @@
 import uuid
 
-def chunk_document(pages, source_file):
-    """
-    Chunks document pages by structural boundaries (paragraphs).
-    Returns a list of dictionaries with the strict metadata schema needed for ChromaDB and exact citations.
-    """
+def chunk_document(pages, source_file, chunk_size=800, overlap=100):
     chunks = []
     
     for page_data in pages:
-        
         page_num = page_data.get("page_number", "unknown")
         text = page_data.get("text", "")
         
-       
-        raw_paragraphs = text.split('\n\n')
+        clean_text = " ".join(text.split())
         
-        for para in raw_paragraphs:
-            clean_para = para.strip()
+        if len(clean_text) < 20:
+            continue
             
-           
-            if len(clean_para) > 30: 
-                chunks.append({
-                    "chunk_id": str(uuid.uuid4()),
-                    "text": clean_para,
-                    "page_number": page_num,
-                    "source_doc": source_file
-                })
-                
+        start = 0
+        text_length = len(clean_text)
+        
+        while start < text_length:
+            end = start + chunk_size
+            chunk_text = clean_text[start:end]
+            
+            chunks.append({
+                "chunk_id": str(uuid.uuid4()),
+                "text": chunk_text,
+                "page_number": page_num,
+                "source_doc": source_file
+            })
+            
+            start += (chunk_size - overlap)
+            
     return chunks
 
 if __name__ == "__main__":
-    
     from ingest import extract_text_from_pdf
     
     pdf_path = "../data/sample.pdf"
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     print(f"Ingesting {pdf_path}...")
     pages = extract_text_from_pdf(pdf_path)
     
-    print("Chunking by structural boundaries...")
+    print("Chunking by sliding window...")
     document_chunks = chunk_document(pages, source_file="sample.pdf")
     
     print(f"\nSuccess! Created {len(document_chunks)} structural chunks.")

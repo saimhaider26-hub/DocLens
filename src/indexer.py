@@ -37,6 +37,12 @@ def index_documents(chunks, collection_name="doclens_mvp"):
         
     return collection
 
+def delete_document_from_index(filename: str, collection_name="doclens_mvp"):
+    client = chromadb.PersistentClient(path=CHROMA_PATH)
+    collection = client.get_or_create_collection(name=collection_name)
+    collection.delete(where={"source_doc": filename})
+    print(f"Deleted all vector chunks for {filename}.")
+
 if __name__ == "__main__":
     data_dir = os.path.join(BASE_DIR, "data")
     

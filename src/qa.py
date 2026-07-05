@@ -16,7 +16,11 @@ def generate_cited_answer(question, n_results=15):
         
     prompt = f"""You are an advanced reading assistant. Your task is to answer the user's question using ONLY the text snippets provided below. 
     Do not use outside general knowledge or make assumptions about private companies. 
-    If the information is in the documents, extract it and provide the exact inline citation specifying the source file and page number.
+    
+    CRITICAL INSTRUCTION: You MUST include the exact source file name and page number in your response. 
+    
+    Always format the beginning of your answer exactly like this:
+    "According to Source: [insert source_doc here] (Page [insert page_number here]), ..."
 
     Documents:
     {context_text}

@@ -7,7 +7,6 @@ API_URL = os.getenv("API_URL", "http://api:8000")
 API_KEY = os.getenv("DOCLENS_API_KEY", "super-secret-key-123") 
 HEADERS = {"X-API-Key": API_KEY}
 
-
 st.set_page_config(page_title="DocLens", layout="wide")
 st.title("📄 DocLens — Source-Cited Document Q&A")
 
@@ -19,7 +18,7 @@ with st.sidebar:
             with st.spinner("Ingesting and indexing document..."):
                 files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
                 try:
-                    response = requests.post(f"{API_URL}/upload", files=files, headers=HEADERS)
+                    response = requests.post(f"{API_URL}/upload", files=files, headers=HEADERS, timeout=300)
                     if response.status_code == 200:
                         st.success(f"'{uploaded_file.name}' indexed successfully.")
                     else:
@@ -35,7 +34,17 @@ with st.sidebar:
             docs = docs_response.json().get("documents", [])
             if docs:
                 for doc in docs:
-                    st.write(f"📄 {doc}")
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.write(f"📄 {doc}")
+                    with col2:
+                        if st.button("❌", key=f"del_{doc}", help="Delete this document"):
+                            with st.spinner("Deleting..."):
+                                delete_res = requests.delete(f"{API_URL}/documents/{doc}", headers=HEADERS)
+                                if delete_res.status_code == 200:
+                                    st.rerun() 
+                                else:
+                                    st.error("Delete failed.")
             else:
                 st.write("No documents indexed yet.")
         else:

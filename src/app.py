@@ -5,7 +5,7 @@ from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from src.ingest import extract_text_from_pdf
 from src.chunker import chunk_document
-from src.indexer import index_documents
+from src.indexer import index_documents, delete_document_from_index
 from src.router import run_router
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -14,7 +14,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = FastAPI(title="DocLens API", version="1.0")
 
-
 API_KEY = os.getenv("DOCLENS_API_KEY", "super-secret-key-123")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
 
@@ -22,7 +21,6 @@ def verify_api_key(api_key: str = Security(api_key_header)):
     if api_key != API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
     return api_key
-
 
 class QueryRequest(BaseModel):
     question: str
@@ -63,6 +61,21 @@ async def list_documents():
         return {"documents": []}
     files = [f for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]
     return {"documents": files}
+
+@app.delete("/documents/{filename}", dependencies=[Depends(verify_api_key)])
+async def delete_document(filename: str):
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    
+    try:
+        delete_document_from_index(filename)
+    except Exception as e:
+        print(f"Error deleting from index: {e}")
+        
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return {"status": "success", "message": f"{filename} deleted successfully."}
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
 
 if __name__ == "__main__":
     import uvicorn

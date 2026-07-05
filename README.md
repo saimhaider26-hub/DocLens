@@ -1,104 +1,155 @@
-# DocLens — Source-Cited Document Q&A Engine
+# DocLens 📄🔍
 
-## 🎯 What This Is
-DocLens is a focused, ship ready RAG (Retrieval Augmented Generation) backend that lets a user upload documents (PDF/DOCX, including scanned files) and ask questions in plain language getting back accurate answers with **exact page-level citations**.
+**A fully local, multi-agent RAG engine for document and data Q&A — no cloud, no API costs, no data leaving your machine.**
 
+Upload documents, ask questions in plain English, and get answers with exact page-level citations. An intelligent routing layer decides whether your question needs document retrieval or a database query, and dispatches it to the right agent — all running locally via Ollama.
 
----
-
-## 🏗️ Phase 1 — MVP (Build This First, Ship It)
-
-**Goal:** A working RAG pipeline you can demo live in a proposal call or Loom video within 1–2 weeks.
-
-### Core Pipeline
-1. **Document Ingestion**
-   - Accepts PDF and DOCX uploads
-   - OCR fallback for scanned/image-based PDFs (Tesseract or PaddleOCR)
-   - Structure-preserving extraction — keep headings, page numbers, and section boundaries intact (don't just flatten to raw text)
-
-2. **Chunking & Indexing**
-   - Chunk by semantic/structural boundaries (not fixed character counts) with page-number metadata attached to every chunk
-   - Embed chunks into a vector database (ChromaDB — simplest to run locally on your hardware)
-   - Hybrid retrieval: vector similarity search + BM25 keyword search, merged/reranked
-
-3. **Query & Citation Engine**
-   - User asks a question in plain language
-   - Retrieved chunks are passed to an LLM (local via Ollama, quantized model — your RTX 4070 handles 7B-class models comfortably)
-   - Answer is generated **with inline citations** that trace back to exact document + page number
-   - If the answer isn't supported by retrieved content, the system says so — no hallucinated citations
-
-4. **API Layer**
-   - FastAPI backend exposing: `/upload`, `/query`, `/documents` (list/status)
-   - Async endpoints so uploads and long document processing don't block
-   - Simple auth token so it's not wide open
-
-5. **Demo Interface**
-   - Streamlit single-page UI: upload a doc, ask a question, see the answer with clickable/highlighted citations
-   - This is what you screen-record for your portfolio and proposals
-
-### Tech Stack (Phase 1)
-- **Language:** Python 3.11+
-- **API:** FastAPI
-- **Retrieval:** ChromaDB + BM25 (rank_bm25 or similar), simple reranker (cross-encoder if time allows)
-- **LLM:** Ollama, local quantized model (e.g. Llama 3.1 8B or Mistral 7B, 4-bit)
-- **Parsing:** PyMuPDF/pdfplumber for PDFs, python-docx for Word, Tesseract for OCR
-- **UI:** Streamlit
-- **Containerization:** Single Dockerfile + docker-compose (app + optional local model server)
-
-### Definition of Done for Phase 1
-- [ ] Upload a real multi-page PDF (including one scanned page) and it processes without manual cleanup
-- [ ] Ask 5 different questions and get answers with correct page citations, verified by hand
-- [ ] Ask 1 question with no answer in the document — system correctly says it can't find it
-- [ ] Whole thing runs via `docker-compose up` with no manual setup steps
-- [ ] 2-minute screen recording showing upload → question → cited answer
+![Status](https://img.shields.io/badge/status-Phase%202%20Complete-brightgreen)
+![Python](https://img.shields.io/badge/python-3.11+-blue)
+![Docker](https://img.shields.io/badge/docker-ready-2496ED)
 
 ---
 
-## 🏗️ Phase 2 — Only After Phase 1 Is Solid and Demoed
 
-**Goal:** Turn the single-agent RAG system into a genuinely agentic, multi-capability system — matching the "RAG + Multi-Agent" and "Text-to-SQL" job posts you're seeing.
+## ✨ What It Does
 
-### Additions
-1. **Text-to-SQL Agent**
-   - Given a mock relational database (a few related tables — invoices, customers, orders is enough), translate natural language into SQL
-   - Validate generated SQL against schema before execution (defensive check — reuse the validation pattern from your ScriptNet Edu project)
-   - Return results in plain language, not raw rows
-
-2. **LangGraph Router**
-   - A lightweight routing layer that decides: is this question about *documents* (→ RAG agent) or *data* (→ SQL agent)?
-   - This is what makes it legitimately "agentic" rather than a single pipeline — and it's the part that shows up explicitly in job post language ("multi-agent orchestration layer")
-
-3. **Guardrail Circuit**
-   - Intercepts LLM output before it reaches the user
-   - For SQL: blocks anything that isn't a SELECT, checks table/column names exist
-   - For RAG: blocks answers with no supporting citation
-
-### Tech Additions (Phase 2)
-- **Orchestration:** LangGraph
-- **Database:** SQLite (zero-setup, good enough for a demo schema)
-- **Optional:** swap Streamlit for a lightweight React front end if you want the UI to look more "product-grade" for higher-budget proposals
-
-### Definition of Done for Phase 2
-- [ ] Ask a document question and a data question in the same session — router sends each to the right agent
-- [ ] A deliberately bad SQL request (e.g. "delete all customers") is blocked by the guardrail
-- [ ] Updated demo video showing both agent types working
+- **Upload** PDF documents and ask questions about their content in natural language
+- **Get** answers with inline citations tracing back to the exact document and page
+- **Query structured data** in plain English — a Text-to-SQL agent translates questions into safe, validated SQL
+- **Trust the routing** — a LangGraph-based Supervisor classifies each question (document / data / ambiguous / out-of-scope) and sends it to the correct agent, instead of blindly guessing
+- **Trust the guardrails** — if an answer isn't supported by the retrieved context, or a generated SQL query isn't a safe read-only `SELECT`, the system refuses rather than making something up
+- **Runs 100% locally** — document processing, embeddings, and LLM inference all happen on your machine via Ollama. Nothing is sent to an external API
+- **Secured** — API endpoints require token authentication
 
 ---
 
-## 🚫 Deliberately Cut From the Original Scope (For Now)
-These were in the original plan but are cut to keep this finishable. Add them later, per-client, only if a specific job actually asks for them:
-- Real multi-tenant data isolation (simulate it in prose in your proposal if a client asks — don't build it speculatively)
-- Live streaming inference logs
-- Chunked upload infrastructure
-- Full dashboard/analytics UI beyond the Streamlit demo
+## 🏗️ Architecture
 
-Cutting these isn't giving something up — it's the difference between a project that ships and proves you can deliver, versus one that stays 60% done forever.
+```
+                    ┌─────────────────────┐
+                    │   User Question       │
+                    └──────────┬────────────┘
+                               │
+                    ┌──────────▼────────────┐
+                    │  Supervisor Router      │
+                    │  (LangGraph + LLM)      │
+                    │  classifies intent:     │
+                    │  document / data /      │
+                    │  ambiguous / oos        │
+                    └──────┬───────┬──────────┘
+                           │       │
+              ┌────────────┘       └────────────┐
+              ▼                                  ▼
+   ┌───────────────────────┐         ┌───────────────────────┐
+   │   Document Agent        │        │   Text-to-SQL Agent     │
+   │  Hybrid Retrieval:       │       │  NL → SQL generation     │
+   │  ChromaDB (vector)       │       │  Guardrail: blocks        │
+   │  + BM25 (keyword)         │      │  non-SELECT statements    │
+   │  → cited LLM answer       │      │  → executes on SQLite      │
+   └───────────────────────┘         └───────────────────────┘
+```
+
+### Document Ingestion Pipeline
+```
+PDF Upload → Text Extraction (PyMuPDF, OCR fallback via Tesseract)
+    → Structural Chunking (page-level metadata preserved)
+    → Embedding (all-MiniLM-L6-v2) → ChromaDB + BM25 index
+    → Hybrid Retrieval → Ollama (Llama 3.1 8B) → Cited Answer
+```
 
 ---
 
-## 💻 Local Hardware
-- Intel Core i7 14th Gen, RTX 4070 (12GB VRAM) — sufficient for 7B-class quantized models via Ollama
-- Budget: $0 (fully local execution)
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Language | Python 3.11+ |
+| API | FastAPI (token-authenticated) |
+| Frontend | Streamlit |
+| Orchestration | LangGraph |
+| Vector DB | ChromaDB |
+| Keyword Search | BM25 |
+| Embeddings | all-MiniLM-L6-v2 (ONNX) |
+| LLM Inference | Ollama (Llama 3.1 8B, local, quantized) |
+| Structured Data | SQLite |
+| PDF Parsing | PyMuPDF + Tesseract OCR (scanned page fallback) |
+| Containerization | Docker, Docker Compose |
 
 ---
 
+## 🚀 Getting Started
+
+### Prerequisites
+- Docker & Docker Compose
+- [Ollama](https://ollama.com) installed with the model pulled:
+  ```bash
+  ollama pull llama3.1
+  ```
+
+### Run It
+
+```bash
+git clone https://github.com/saimhaider26-hub/DocLens.git
+cd DocLens
+docker-compose up
+```
+
+Open the Streamlit UI (default: `http://localhost:8501`), upload a document, and start asking questions.
+
+---
+
+## 🧭 Example Interactions
+
+**Document question:**
+> **Q:** "Which specific IT-related laws are included in the Lecture 2 curriculum?"
+>
+> **A:** Electronic Transactions Ordinance 2002 [PPIT_REPORT_Final.pdf, Page 5]; PECA 2016 [PPIT_REPORT_Final.pdf, Page 5]; FIA Cybercrime Regulations [PPIT_REPORT_Final.pdf, Page 5]; Data Protection [PPIT_REPORT_Final.pdf, Page 5]; Intellectual Property Laws [PPIT_REPORT_Final.pdf, Page 5]
+
+**Ambiguity guardrail:**
+> **Q:** "Who is the group leader for this project?" *(asked with two different projects indexed)*
+>
+> **A:** Flagged as ambiguous — the Supervisor recognizes multiple distinct projects are indexed and asks for clarification instead of guessing which one "this project" refers to.
+
+**Out-of-scope guardrail:**
+> **Q:** "What is the capital of Pakistan?"
+>
+> **A:** Correctly identified as out-of-scope and declined, since it isn't a document or data question relevant to the indexed content.
+
+**Data question (Text-to-SQL):**
+> **Q:** "How many customers are in the database?"
+>
+> **A:** Routed to the SQL agent, which generates and executes a validated `SELECT COUNT(*)` query and returns the result in plain language.
+
+---
+
+## 🔒 Why Local-First Matters
+
+Every step — embedding, retrieval, and generation — runs on your own hardware via Ollama. No document content or database schema ever leaves your machine, there are no per-token API costs, and it works offline once models are pulled. This makes it a realistic foundation for privacy-sensitive use cases: legal documents, internal reports, healthcare records, or any business data that shouldn't touch a third-party LLM API.
+
+---
+
+## ⚠️ Known Limitations
+
+- **Diagrams and visual content:** Text extraction flattens 2D layouts (flowcharts, UML diagrams, architecture diagrams) into linear text, which can scramble spatial relationships between labels. The system handles prose, tables, and scanned text well, but doesn't yet "understand" diagram structure the way a human reading the image would. A multimodal/vision-model extension would be needed to properly interpret diagram content — this is flagged as a scoped Phase 3 candidate, not a current feature.
+- **SQL agent works against a demo schema:** the Text-to-SQL agent is built and validated against a sample SQLite schema; connecting it to a production database would need schema-specific tuning.
+
+---
+
+## 🗺️ Roadmap
+
+- [x] **Phase 1** — Core RAG pipeline: ingestion (with OCR fallback), hybrid retrieval, citation-aware generation, hallucination guardrails, FastAPI + Streamlit, full Docker containerization, token-based API auth
+- [x] **Phase 2** — Agentic architecture: LangGraph Supervisor routing layer (document / data / ambiguous / out-of-scope classification), Text-to-SQL agent with defensive SQL validation guardrails
+- [ ] **Phase 3 (proposed)** — Multimodal extension for diagram/image understanding within documents
+
+---
+
+## 📄 License
+
+MIT
+
+---
+
+## 👤 Author
+
+**Saim Haider**
+[GitHub](https://github.com/saimhaider26-hub)
