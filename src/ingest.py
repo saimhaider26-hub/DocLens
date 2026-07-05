@@ -26,7 +26,8 @@ def extract_text_from_pdf(pdf_path: str) -> List[Dict[str, any]]:
     return document_chunks
 
 if __name__ == "__main__":
-    test_file = "../data/sample.pdf" 
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    test_file = os.path.join(BASE_DIR, "data", "sample.pdf")
     
     try:
         extracted_data = extract_text_from_pdf(test_file)

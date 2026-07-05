@@ -2,8 +2,11 @@ import streamlit as st
 import requests
 import os
 
-
 API_URL = os.getenv("API_URL", "http://api:8000")
+
+API_KEY = os.getenv("DOCLENS_API_KEY", "super-secret-key-123") 
+HEADERS = {"X-API-Key": API_KEY}
+
 
 st.set_page_config(page_title="DocLens", layout="wide")
 st.title("📄 DocLens — Source-Cited Document Q&A")
@@ -16,7 +19,7 @@ with st.sidebar:
             with st.spinner("Ingesting and indexing document..."):
                 files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
                 try:
-                    response = requests.post(f"{API_URL}/upload", files=files)
+                    response = requests.post(f"{API_URL}/upload", files=files, headers=HEADERS)
                     if response.status_code == 200:
                         st.success(f"'{uploaded_file.name}' indexed successfully.")
                     else:
@@ -27,7 +30,7 @@ with st.sidebar:
     st.divider()
     st.header("Indexed Documents")
     try:
-        docs_response = requests.get(f"{API_URL}/documents")
+        docs_response = requests.get(f"{API_URL}/documents", headers=HEADERS)
         if docs_response.status_code == 200:
             docs = docs_response.json().get("documents", [])
             if docs:
@@ -46,7 +49,7 @@ question = st.text_input("Type your question about the uploaded documents:")
 if st.button("Ask") and question:
     with st.spinner("Thinking..."):
         try:
-            response = requests.post(f"{API_URL}/query", json={"question": question})
+            response = requests.post(f"{API_URL}/query", json={"question": question}, headers=HEADERS)
             if response.status_code == 200:
                 answer = response.json().get("answer", "No answer returned.")
                 st.markdown("### Answer")

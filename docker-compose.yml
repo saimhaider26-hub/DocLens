@@ -11,7 +11,7 @@ services:
       - ./data:/app/data
       - ./chroma_db:/app/chroma_db
     environment:
-      - OLLAMA_HOST=http://host.docker.internal:11434 
+      - OLLAMA_URL=http://host.docker.internal:11434/api/generate
 
   ui:
     build: .

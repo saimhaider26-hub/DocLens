@@ -6,3 +6,4 @@ chromadb
 ollama
 streamlit
 rank-bm25
+langgraph

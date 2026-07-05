@@ -1,11 +1,15 @@
+import os
 import chromadb
 from rank_bm25 import BM25Okapi
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if os.path.exists("/app/chroma_db"):
+    CHROMA_PATH = "/app/chroma_db"
+else:
+    CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
+
 def hybrid_search(question, n_results=3, collection_name="doclens_mvp"):
-    # FIXED: Must match the path in indexer.py exactly
-    client = chromadb.PersistentClient(path="/app/chroma_db")
-    
-    # FIXED: Use get_or_create to ensure consistency during search
+    client = chromadb.PersistentClient(path=CHROMA_PATH)
     collection = client.get_or_create_collection(name=collection_name)
     
     all_data = collection.get(include=['documents', 'metadatas'])
